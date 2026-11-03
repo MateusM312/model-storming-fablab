@@ -182,3 +182,71 @@ flowchart TD
     N --> FIM2([Fim])
     Z1 --> Z2 --> FIM3([Fim])
 ```
+
+## 4. Diagrama de Componentes
+
+```mermaid
+flowchart LR
+    subgraph USR["Usuários"]
+        U1(["Solicitante"])
+        U2(["Administrador/Técnico"])
+    end
+
+    subgraph FAB["FabLab Manager"]
+        direction TB
+
+        subgraph APRES["Apresentação"]
+            WEB["Portal Web FabLab"]
+        end
+
+        subgraph NEG["Camada de Negócio"]
+            RES["Componente Reservas"]
+            FILA["Componente Fila de Prioridade"]
+            MAQ["Componente Máquinas e Manutenção"]
+            EST["Componente Estoque de Insumos"]
+            COMP["Componente Compras"]
+            NOTI["Componente Notificações"]
+            ACES["Componente Controle de Acesso"]
+        end
+
+        subgraph DADOS["Persistência"]
+            BD[("Banco de Dados FabLab")]
+        end
+    end
+
+    subgraph EXT["Sistemas Externos"]
+        LOGIN["Sistema de Login"]
+        SNOT["Serviço de Notificação"]
+        FIN["Sistema Financeiro"]
+        FORN["Portal do Fornecedor"]
+    end
+
+    U1 --> WEB
+    U2 --> WEB
+
+    WEB -->|IAutenticacao| ACES
+    WEB -->|IReservaService| RES
+    WEB -->|IMaquinaService| MAQ
+    WEB -->|IEstoqueService| EST
+
+    ACES -->|autenticar| LOGIN
+
+    RES -->|IMaquinaService| MAQ
+    RES -->|IFilaPrioridade| FILA
+    RES -->|INotificacao| NOTI
+
+    EST -->|solicitar compra| COMP
+    EST -->|INotificacao| NOTI
+
+    COMP -->|aprovar ou recusar| FIN
+    COMP -->|enviar pedido| FORN
+    FORN -->|confirmar entrega| COMP
+
+    NOTI -->|enviar evento| SNOT
+
+    RES --> BD
+    FILA --> BD
+    MAQ --> BD
+    EST --> BD
+    COMP --> BD
+```
