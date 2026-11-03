@@ -1,3 +1,7 @@
+# FabLab Manager — Model Storming (DaC)
+
+## 1. Diagrama de Sequência — Reserva de Máquina
+
 ```mermaid
 sequenceDiagram
 autonumber
