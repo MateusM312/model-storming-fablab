@@ -1,3 +1,4 @@
+## 1. Diagrama de Sequência — Reserva de Máquina
 ```mermaid
 sequenceDiagram
 autonumber
