@@ -132,3 +132,49 @@ ReservaService "1" --> "*" Reserva : gerencia
 MaquinaService "1" --> "*" Maquina : gerencia
 Reserva "*" --> "1" Maquina : reserva
 ```
+
+## 3. Diagrama de Atividades — Processo de Reserva
+
+```mermaid
+flowchart TD
+    subgraph SOL["Solicitante"]
+        A([Início]) --> B["Autenticar"]
+        B --> C["Consultar disponibilidade (RF01)"]
+        C --> D["Solicitar reserva (RF02)"]
+        S1["Consultar posição na fila (RF05)"]
+        Z1["Cancelar reserva (RF09)"]
+    end
+
+    subgraph SIS["Sistema FabLab"]
+        E{"Máquina disponível e fora de manutenção?"}
+        F["Informar reserva não permitida"]
+        G{"Há conflito de horário? (RF03)"}
+        H["Criar/atualizar fila de prioridade (RF04)"]
+        I["Encaminhar para aprovação"]
+        L["Atualizar estado da máquina para reservada"]
+        M["Registrar justificativa"]
+        N["Enviar notificação (RF25)"]
+        Z2["Liberar horário e atualizar fila"]
+    end
+
+    subgraph ADM["Administrador/Técnico"]
+        J{"Caso excepcional?"}
+        K["Reordenar fila (RF14)"]
+        O{"Aprovar reserva?"}
+        P["Aprovar reserva (RF06)"]
+        Q["Negar reserva (RF07) com justificativa (RF08)"]
+    end
+
+    D --> E
+    E -- Não --> F --> FIM1([Fim])
+    E -- Sim --> G
+    G -- Sim --> H --> S1 --> I
+    G -- Não --> I
+    I --> J
+    J -- Sim --> K --> O
+    J -- Não --> O
+    O -- Sim --> P --> L --> N
+    O -- Não --> Q --> M --> N
+    N --> FIM2([Fim])
+    Z1 --> Z2 --> FIM3([Fim])
+```
