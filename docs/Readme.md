@@ -1,4 +1,3 @@
-## 1. Diagrama de Sequência — Reserva de Máquina
 ```mermaid
 sequenceDiagram
 autonumber
@@ -45,4 +44,91 @@ else Máquina disponível
         %% >>> cole aqui o restante do seu diagrama <<<
     end
 end
+```
+
+## 2. Diagrama de Interfaces
+
+```mermaid
+classDiagram
+direction LR
+
+class IAutenticacao {
+    <<interface>>
+    +autenticar(credenciais) Perfil
+    +verificarPermissao(perfil, funcionalidade) boolean
+}
+
+class IMaquinaService {
+    <<interface>>
+    +consultarDisponibilidade(periodo) Horario[]
+    +obterEstado(maquinaId) EstadoMaquina
+    +cadastrar(maquina) void
+    +atualizar(maquina) void
+    +marcarManutencao(maquinaId, periodo) void
+}
+
+class IReservaService {
+    <<interface>>
+    +solicitar(maquinaId, periodo) Reserva
+    +aprovar(reservaId) void
+    +negar(reservaId, justificativa) void
+    +cancelar(reservaId) void
+}
+
+class IFilaPrioridade {
+    <<interface>>
+    +identificarConflito(maquinaId, periodo) boolean
+    +enfileirar(reservaId) int
+    +consultarPosicao(reservaId) int
+    +reordenar(maquinaId, novaOrdem) void
+}
+
+class INotificacao {
+    <<interface>>
+    +notificar(destinatario, evento) void
+}
+
+class IEstoqueService {
+    <<interface>>
+    +registrarConsumo(insumoId, quantidade) void
+    +consultarEstoque() Insumo[]
+    +solicitarCompra(insumoId, quantidade) PedidoCompra
+}
+
+class LoginService
+class MaquinaService
+class ReservaService
+class FilaPrioridadeService
+class NotificacaoService
+class EstoqueService
+
+class Reserva {
+    +id
+    +periodo
+    +status
+    +justificativa
+}
+
+class Maquina {
+    +id
+    +tipo
+    +estado
+}
+
+IAutenticacao <|.. LoginService
+IMaquinaService <|.. MaquinaService
+IReservaService <|.. ReservaService
+IFilaPrioridade <|.. FilaPrioridadeService
+INotificacao <|.. NotificacaoService
+IEstoqueService <|.. EstoqueService
+
+ReservaService ..> IMaquinaService : verifica estado
+ReservaService ..> IFilaPrioridade : trata conflitos
+ReservaService ..> INotificacao : dispara eventos
+ReservaService ..> IAutenticacao : valida perfil
+EstoqueService ..> INotificacao : dispara eventos
+
+ReservaService "1" --> "*" Reserva : gerencia
+MaquinaService "1" --> "*" Maquina : gerencia
+Reserva "*" --> "1" Maquina : reserva
 ```
