@@ -8,51 +8,75 @@ sequenceDiagram
     participant Broker as Broker de Mensagens
     participant Not as Serviço de Notificação
 
-    Note over Sol,API: Usuários já autenticados no Sistema de Login (RF24)
+    Note over Sol,API: Solicitante e administrador autenticados.<br/>A API verifica as permissões de cada operação (RF24).
 
     rect rgb(240, 246, 255)
-    Note over Sol,DB: 1. Pedido de reserva
-    Sol->>API: Solicitar reserva da máquina no período (RF02)
-    API->>DB: Verificar manutenção e conflitos (timeout 3 s)
+        Note over Sol,DB: 1. Pedido de reserva
+        Sol->>API: solicitar(maquinaId, periodo, chave) (RF02)
+        API->>DB: Consultar chave, manutenção e conflitos (timeout de 3 s)
 
-    alt FALHA 1: banco não responde em 3 s
-        API-->>Sol: Erro 503 "tente novamente" (nada foi gravado)
-        Note over Sol,API: Circuit breaker evita sobrecarregar o banco.<br/>Reenviar com a mesma chave não duplica a reserva.
-    else Máquina em manutenção no período
-        API-->>Sol: Reserva não permitida (RF13)
-    else Período livre
-        API->>DB: Gravar reserva PENDENTE + evento no outbox
-        API-->>Sol: Aguardando aprovação
-    else Conflito de horário (RF03)
-        API->>DB: Gravar reserva EM_FILA + evento no outbox (RF04)
-        API-->>Sol: Em fila, posição N (RF05)
-    end
+        alt FALHA 1: consulta ao banco excede 3 s
+            API-->>Sol: Erro 503, tente novamente
+            Note over Sol,API: O circuit breaker evita sobrecarregar o banco.<br/>O Solicitante pode repetir o pedido com a mesma chave.
+        else Solicitação já registrada com a mesma chave
+            API-->>Sol: Retornar a reserva existente
+        else Máquina em manutenção no período
+            API-->>Sol: Reserva não permitida (RF13)
+        else Conflito de horário (RF03)
+            API->>DB: Gravar reserva EM_FILA e evento no Outbox (RF04)
+            DB-->>API: Reserva registrada
+            API-->>Sol: Reserva em fila, posição N (RF05)
+        else Período livre
+            API->>DB: Gravar reserva PENDENTE e evento no Outbox
+            DB-->>API: Reserva registrada
+            API-->>Sol: Aguardando aprovação
+        end
+        Note over API,DB: A chave é única por Solicitante.<br/>A reserva e seu evento são gravados na mesma transação.
     end
 
     rect rgb(245, 245, 245)
-    Note over Adm,DB: 2. Decisão do Administrador/Técnico
-    alt Aprovar (RF06)
-        Adm->>API: Aprovar reserva
-        API->>DB: Marcar APROVADA + evento no outbox
-    else Negar (RF07)
-        Adm->>API: Negar com justificativa (RF08)
-        API->>DB: Marcar NEGADA + promover próxima da fila + evento no outbox
-    end
+        Note over Adm,DB: 2. Decisão sobre uma reserva existente
+        alt Aprovar (RF06)
+            Adm->>API: aprovar(reservaId)
+            API->>DB: Revalidar estado, manutenção e conflitos do período
+            alt Reserva PENDENTE e período disponível
+                API->>DB: Marcar APROVADA e gravar evento no Outbox
+                DB-->>API: Aprovação registrada
+                API-->>Adm: Reserva aprovada
+            else Estado inválido, manutenção ou conflito
+                API-->>Adm: Aprovação recusada com o motivo
+            end
+            Note over API,DB: A revalidação e a gravação da aprovação<br/>ocorrem na mesma transação.
+        else Negar (RF07)
+            Adm->>API: negar(reservaId, justificativa) (RF08)
+            API->>DB: Verificar o estado da reserva
+            alt Reserva PENDENTE ou EM_FILA e justificativa informada
+                API->>DB: Marcar NEGADA e gravar justificativa e evento no Outbox
+                opt A negação liberou o horário e há próxima reserva elegível
+                    API->>DB: Promover a próxima da fila para PENDENTE
+                end
+                DB-->>API: Negação registrada
+                API-->>Adm: Reserva negada
+            else Estado inválido ou justificativa ausente
+                API-->>Adm: Negação recusada com o motivo
+            end
+        end
     end
 
     rect rgb(240, 250, 240)
-    Note over Worker,Not: 3. Notificação em segundo plano (RF25)
-    Worker->>DB: Buscar eventos pendentes do outbox
-    Worker->>Broker: Publicar na fila de notificações
-    Broker->>Worker: Entregar mensagem
-    Worker->>Not: Enviar e-mail ao Solicitante
+        Note over Worker,Not: 3. Notificação em segundo plano (RF25)
+        Worker->>DB: Buscar eventos pendentes do Outbox
+        Worker->>Broker: Publicar na fila de notificações
+        Broker->>Worker: Entregar mensagem
+        Worker->>Not: Solicitar envio de e-mail ao Solicitante
 
-    alt FALHA 2: Serviço de Notificação indisponível
-        Not--xWorker: Sem resposta / erro 503
-        Worker->>Broker: Devolver para a fila de retentativa
-        Note over Worker,Broker: Até 5 tentativas com espera crescente.<br/>Depois: dead-letter queue e alerta ao Administrador.<br/>A reserva já está salva e não é afetada.
-    else E-mail enviado
-        Not-->>Sol: E-mail com o resultado
-        Worker->>Broker: Confirmar processamento (ACK)
-    end
+        alt FALHA 2: Serviço de Notificação indisponível
+            Not--xWorker: Sem resposta ou erro 503
+            Worker->>Broker: Encaminhar para a fila de retentativa
+            Note over Worker,Broker: Até 5 tentativas com espera crescente.<br/>Se esgotadas, enviar para a fila de mensagens não processadas (DLQ)<br/>e alertar o Administrador/Técnico.
+        else E-mail enviado
+            Not-->>Sol: E-mail sobre a reserva
+            Not-->>Worker: Confirmar envio
+            Worker->>Broker: Confirmar processamento (ACK)
+        end
     end

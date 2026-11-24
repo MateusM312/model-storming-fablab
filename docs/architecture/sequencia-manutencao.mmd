@@ -5,15 +5,24 @@ sequenceDiagram
     participant DB as Banco de Dados
 
     Adm->>API: Marcar máquina em manutenção no período (RF12)
-    API->>DB: Gravar manutenção
-    API->>DB: Buscar reservas já feitas para esse período
-    Note over API,DB: Daqui em diante, novas reservas no período<br/>são recusadas (RF13)
+    API->>DB: Gravar manutenção da máquina no período
+    Note over API,DB: A API recusa novas solicitações e bloqueia aprovações<br/>para essa máquina em horários sobrepostos à manutenção (RF13)
 
-    alt Há reservas no período
-        API-->>Adm: Manutenção registrada + lista de reservas afetadas
-        Note over Adm,API: Essas reservas não podem mais ser aprovadas
-        Adm->>API: Negar cada uma com justificativa (RF07, RF08)
-        Note over API: O Solicitante é avisado por e-mail,<br/>como em qualquer negação
-    else Nenhuma reserva no período
+    API->>DB: Buscar reservas ativas da mesma máquina<br/>com horário sobreposto à manutenção
+    DB-->>API: Reservas afetadas e seus estados
+
+    alt Há reservas afetadas
+        API-->>Adm: Manutenção registrada e lista de reservas afetadas
+        opt Há reservas já APROVADAS
+            Note over Adm,API: Reservas aprovadas são sinalizadas ao administrador.<br/>O tratamento depende de decisão da equipe.
+        end
+        loop Para cada reserva PENDENTE ou EM_FILA que o administrador decidir negar
+            Adm->>API: negar(reservaId, justificativa) (RF07, RF08)
+            API->>DB: Registrar negação, justificativa e evento no Outbox
+            DB-->>API: Negação registrada
+            API-->>Adm: Confirmar negação
+            Note over API: O evento no Outbox dispara o aviso por e-mail em segundo plano (RF25)
+        end
+    else Nenhuma reserva afetada
         API-->>Adm: Manutenção registrada
     end
