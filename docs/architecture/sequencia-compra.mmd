@@ -6,6 +6,7 @@ sequenceDiagram
     participant Worker as Worker de Integrações
     participant Fin as Sistema Financeiro
     participant Forn as Portal do Fornecedor
+    participant Notif as Serviço de Notificação
 
     rect rgb(240, 246, 255)
     Note over Adm,DB: 1. Solicitação
@@ -21,7 +22,9 @@ sequenceDiagram
     Fin->>API: Decisão por webhook
 
     alt Recusada (RF20)
-        API->>DB: Marcar RECUSADO + avisar o Administrador
+        API->>DB: Marcar RECUSADO
+        API->>Notif: Disparar alerta de recusa (RF25)
+        Notif-->>Adm: Notificar recusa financeira
     else Aprovada (RF19)
         API->>DB: Marcar APROVADO + evento no outbox
     end
@@ -33,5 +36,7 @@ sequenceDiagram
     Worker->>Forn: Enviar pedido aprovado (RF21)
     Forn->>API: Confirmar entrega por webhook (RF22)
     API->>DB: Marcar ENTREGUE + somar ao estoque (RF23)
+    API->>Notif: Disparar alerta de recebimento (RF25)
+    Notif-->>Adm: Notificar reposição de estoque concluída
     Note over Forn,API: Confirmação repetida não soma o estoque de novo
     end
