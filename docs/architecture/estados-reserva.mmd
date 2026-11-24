@@ -1,0 +1,22 @@
+stateDiagram-v2
+    direction TB
+
+    [*] --> PENDENTE : solicitada,<br/>período livre
+    [*] --> EM_FILA : solicitada,<br/>com conflito
+
+    EM_FILA --> PENDENTE : chegou a vez
+    PENDENTE --> APROVADA : aprovada
+    PENDENTE --> NEGADA : negada
+    EM_FILA --> NEGADA : negada
+
+    PENDENTE --> CANCELADA : cancelada
+    EM_FILA --> CANCELADA : cancelada
+    APROVADA --> CANCELADA : cancelada
+
+    APROVADA --> [*]
+    NEGADA --> [*]
+    CANCELADA --> [*]
+
+    note right of NEGADA
+        Sempre com justificativa (RF08)
+    end note

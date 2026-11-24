@@ -1,0 +1,17 @@
+C4Context
+    title Contexto (C4 Nível 1) - Sistema FabLab
+
+    Person(solicitante, "Solicitante", "Reserva máquinas")
+    Person(admin, "Administrador/Técnico", "Aprova reservas, gerencia estoque")
+    System(fablab, "Sistema FabLab", "Reservas, fila, manutenção, estoque e compras")
+    System_Ext(login, "Sistema de Login", "Autenticação")
+    System_Ext(notificacao, "Serviço de Notificação", "E-mail")
+    System_Ext(financeiro, "Sistema Financeiro", "Aprova compras")
+    System_Ext(fornecedor, "Portal do Fornecedor", "Recebe pedidos")
+
+    Rel(solicitante, fablab, "Usa")
+    Rel(admin, fablab, "Usa")
+    Rel(fablab, login, "Autentica")
+    Rel(fablab, notificacao, "E-mails")
+    BiRel(fablab, financeiro, "Compras")
+    BiRel(fablab, fornecedor, "Pedidos")

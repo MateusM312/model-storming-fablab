@@ -1,0 +1,30 @@
+flowchart LR
+    %% Azul = contêineres do Sistema FabLab | Cinza = sistemas externos
+    classDef pessoa fill:#08427b,stroke:#052e56,color:#fff
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef externo fill:#8c8c8c,stroke:#6b6b6b,color:#fff
+
+    sol["<b>Solicitante</b><br/><small>[Pessoa]</small>"]:::pessoa
+    adm["<b>Administrador/Técnico</b><br/><small>[Pessoa]</small>"]:::pessoa
+
+    web["<b>Aplicação Web</b><br/><small>[Contêiner: SPA]</small><br/>Telas do Solicitante<br/>e do Administrador"]:::container
+    api["<b>API Backend</b><br/><small>[Contêiner: API REST]</small><br/>Regras de reservas, fila,<br/>máquinas, estoque e compras"]:::container
+    db[("<b>Banco de Dados</b><br/><small>[PostgreSQL]</small><br/>Dados + tabela outbox")]:::container
+    worker["<b>Worker de Integrações</b><br/><small>[Contêiner: segundo plano]</small><br/>Entrega os eventos aos<br/>sistemas externos"]:::container
+    broker[["<b>Broker de Mensagens</b><br/><small>[RabbitMQ]</small><br/>Filas, retentativa e DLQ"]]:::container
+
+    login["<b>Sistema de Login</b><br/><small>[Sistema externo]</small>"]:::externo
+    notif["<b>Serviço de Notificação</b><br/><small>[Sistema externo]</small><br/>Envia os e-mails"]:::externo
+    fin["<b>Sistema Financeiro</b><br/><small>[Sistema externo]</small><br/>Aprova ou recusa compras;<br/>responde à API por webhook"]:::externo
+    forn["<b>Portal do Fornecedor</b><br/><small>[Sistema externo]</small><br/>Recebe pedidos; confirma<br/>entrega à API por webhook"]:::externo
+
+    sol -- "Usa [HTTPS]" --> web
+    adm -- "Usa [HTTPS]" --> web
+    web -- "Chama [JSON/HTTPS]" --> api
+    api -- "Autentica [OIDC]" --> login
+    api -- "Grava dados e eventos<br/>na mesma transação [SQL]" --> db
+    db -- "Eventos pendentes<br/>do outbox [SQL]" --> worker
+    worker <-- "AMQP" --> broker
+    worker -- "E-mails" --> notif
+    worker -- "Solicitações<br/>de compra" --> fin
+    worker -- "Pedidos<br/>aprovados" --> forn

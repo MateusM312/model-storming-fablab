@@ -1,0 +1,58 @@
+sequenceDiagram
+    autonumber
+    actor Sol as Solicitante
+    actor Adm as Administrador/Técnico
+    participant API as API Backend
+    participant DB as Banco de Dados
+    participant Worker as Worker de Integrações
+    participant Broker as Broker de Mensagens
+    participant Not as Serviço de Notificação
+
+    Note over Sol,API: Usuários já autenticados no Sistema de Login (RF24)
+
+    rect rgb(240, 246, 255)
+    Note over Sol,DB: 1. Pedido de reserva
+    Sol->>API: Solicitar reserva da máquina no período (RF02)
+    API->>DB: Verificar manutenção e conflitos (timeout 3 s)
+
+    alt FALHA 1: banco não responde em 3 s
+        API-->>Sol: Erro 503 "tente novamente" (nada foi gravado)
+        Note over Sol,API: Circuit breaker evita sobrecarregar o banco.<br/>Reenviar com a mesma chave não duplica a reserva.
+    else Máquina em manutenção no período
+        API-->>Sol: Reserva não permitida (RF13)
+    else Período livre
+        API->>DB: Gravar reserva PENDENTE + evento no outbox
+        API-->>Sol: Aguardando aprovação
+    else Conflito de horário (RF03)
+        API->>DB: Gravar reserva EM_FILA + evento no outbox (RF04)
+        API-->>Sol: Em fila, posição N (RF05)
+    end
+    end
+
+    rect rgb(245, 245, 245)
+    Note over Adm,DB: 2. Decisão do Administrador/Técnico
+    alt Aprovar (RF06)
+        Adm->>API: Aprovar reserva
+        API->>DB: Marcar APROVADA + evento no outbox
+    else Negar (RF07)
+        Adm->>API: Negar com justificativa (RF08)
+        API->>DB: Marcar NEGADA + promover próxima da fila + evento no outbox
+    end
+    end
+
+    rect rgb(240, 250, 240)
+    Note over Worker,Not: 3. Notificação em segundo plano (RF25)
+    Worker->>DB: Buscar eventos pendentes do outbox
+    Worker->>Broker: Publicar na fila de notificações
+    Broker->>Worker: Entregar mensagem
+    Worker->>Not: Enviar e-mail ao Solicitante
+
+    alt FALHA 2: Serviço de Notificação indisponível
+        Not--xWorker: Sem resposta / erro 503
+        Worker->>Broker: Devolver para a fila de retentativa
+        Note over Worker,Broker: Até 5 tentativas com espera crescente.<br/>Depois: dead-letter queue e alerta ao Administrador.<br/>A reserva já está salva e não é afetada.
+    else E-mail enviado
+        Not-->>Sol: E-mail com o resultado
+        Worker->>Broker: Confirmar processamento (ACK)
+    end
+    end

@@ -1,0 +1,56 @@
+classDiagram
+    direction LR
+
+    class Maquina {
+        id
+        tipo
+        estado : EstadoMaquina
+    }
+    class Reserva {
+        id
+        periodo
+        status : StatusReserva
+        posicaoFila
+        justificativa
+    }
+    class Insumo {
+        id
+        nome
+        unidade
+        quantidadeEmEstoque
+    }
+    class PedidoCompra {
+        id
+        quantidade
+        status : StatusPedido
+    }
+
+    class StatusReserva {
+        <<enumeration>>
+        PENDENTE
+        EM_FILA
+        APROVADA
+        NEGADA
+        CANCELADA
+    }
+    class EstadoMaquina {
+        <<enumeration>>
+        DISPONIVEL
+        RESERVADA
+        EM_USO
+        EM_MANUTENCAO
+    }
+    class StatusPedido {
+        <<enumeration>>
+        SOLICITADO
+        APROVADO
+        RECUSADO
+        ENVIADO_FORNECEDOR
+        ENTREGUE
+    }
+
+    Reserva "*" --> "1" Maquina : reserva
+    PedidoCompra "*" --> "1" Insumo : repõe
+    Reserva ..> StatusReserva
+    Maquina ..> EstadoMaquina
+    PedidoCompra ..> StatusPedido

@@ -1,0 +1,29 @@
+C4Container
+    title Contêineres (C4 Nível 2) - Sistema FabLab
+
+    Person(solicitante, "Solicitante", "Reserva máquinas")
+    Person(admin, "Administrador/Técnico", "Aprova reservas, gerencia estoque")
+
+    System_Boundary(fablab, "Sistema FabLab") {
+        Container(web, "Aplicação Web", "SPA", "Telas do sistema")
+        Container(api, "API Backend", "API REST", "Regras de negócio")
+        ContainerDb(db, "Banco de Dados", "PostgreSQL", "Dados + outbox")
+        Container(worker, "Worker de Integrações", "Segundo plano", "Entrega eventos com retentativa")
+        ContainerQueue(broker, "Broker de Mensagens", "RabbitMQ", "Filas e DLQ")
+    }
+
+    System_Ext(login, "Sistema de Login", "OIDC")
+    System_Ext(notificacao, "Serviço de Notificação", "E-mail")
+    System_Ext(financeiro, "Sistema Financeiro", "Aprova compras")
+    System_Ext(fornecedor, "Portal do Fornecedor", "Recebe pedidos")
+
+    Rel(solicitante, web, "Usa")
+    Rel(admin, web, "Usa")
+    Rel(web, api, "JSON/HTTPS")
+    Rel(api, login, "Autentica")
+    Rel(api, db, "SQL")
+    Rel(worker, db, "Lê outbox")
+    Rel(worker, broker, "AMQP")
+    Rel(worker, notificacao, "E-mails")
+    Rel(worker, financeiro, "Compras")
+    Rel(worker, fornecedor, "Pedidos")

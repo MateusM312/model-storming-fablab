@@ -1,0 +1,41 @@
+flowchart TB
+    classDef decisao fill:#fff8dc,stroke:#8a6d00
+    classDef inicio fill:#000,stroke:#000,color:#fff
+    classDef acao fill:#eef4fb,stroke:#5d82a8,color:#0b2545
+
+    INI(("início")):::inicio
+
+    subgraph SOL["Solicitante"]
+        A1["Consultar disponibilidade (RF01)"]:::acao
+        A2["Solicitar reserva (RF02)"]:::acao
+    end
+
+    subgraph SIS["Sistema FabLab"]
+        D1{"Máquina em manutenção<br/>no período?"}:::decisao
+        A3["Recusar a reserva"]:::acao
+        D2{"Conflito de horário?<br/>(RF03)"}:::decisao
+        A4["Colocar na fila de<br/>prioridade (RF04)"]:::acao
+        A5["Encaminhar para aprovação"]:::acao
+        A8["Registrar reserva APROVADA"]:::acao
+        A9["Registrar justificativa e<br/>promover a próxima da fila"]:::acao
+        A10["Notificar o Solicitante<br/>por e-mail (RF25)"]:::acao
+    end
+
+    subgraph ADM["Administrador/Técnico"]
+        D3{"Aprovar?"}:::decisao
+        A6["Aprovar (RF06)"]:::acao
+        A7["Negar com justificativa<br/>(RF07, RF08)"]:::acao
+    end
+
+    FIM1(("fim")):::inicio
+    FIM2(("fim")):::inicio
+
+    INI --> A1 --> A2 --> D1
+    D1 -- sim --> A3 --> FIM1
+    D1 -- não --> D2
+    D2 -- sim --> A4 --> A5
+    D2 -- não --> A5
+    A5 --> D3
+    D3 -- sim --> A6 --> A8 --> A10
+    D3 -- não --> A7 --> A9 --> A10
+    A10 --> FIM2

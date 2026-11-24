@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    actor Adm as Administrador/Técnico
+    participant API as API Backend
+    participant DB as Banco de Dados
+
+    Adm->>API: Marcar máquina em manutenção no período (RF12)
+    API->>DB: Gravar manutenção
+    API->>DB: Buscar reservas já feitas para esse período
+    Note over API,DB: Daqui em diante, novas reservas no período<br/>são recusadas (RF13)
+
+    alt Há reservas no período
+        API-->>Adm: Manutenção registrada + lista de reservas afetadas
+        Note over Adm,API: Essas reservas não podem mais ser aprovadas
+        Adm->>API: Negar cada uma com justificativa (RF07, RF08)
+        Note over API: O Solicitante é avisado por e-mail,<br/>como em qualquer negação
+    else Nenhuma reserva no período
+        API-->>Adm: Manutenção registrada
+    end

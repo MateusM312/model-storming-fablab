@@ -1,0 +1,74 @@
+classDiagram
+    direction TB
+
+    class IReservaService {
+        <<interface>>
+        +solicitar(maquinaId, periodo, chave) Reserva
+        +aprovar(reservaId)
+        +negar(reservaId, justificativa)
+        +cancelar(reservaId)
+    }
+    class ReservaService {
+        +ReservaService(IMaquinaService, IFilaPrioridade, INotificacao, IAutenticacao)
+    }
+    IReservaService <|.. ReservaService
+
+    class IMaquinaService {
+        <<interface>>
+        +consultarDisponibilidade(maquinaId, periodo)
+        +estaEmManutencao(maquinaId, periodo) bool
+        +marcarManutencao(maquinaId, periodo) Reserva[]
+        +cadastrar(maquina)
+        +atualizar(maquina)
+    }
+    class IFilaPrioridade {
+        <<interface>>
+        +enfileirar(reservaId) int
+        +consultarPosicao(reservaId) int
+        +reordenar(maquinaId, novaOrdem)
+        +promoverProxima(maquinaId, periodo)
+    }
+    class INotificacao {
+        <<interface>>
+        +notificar(destinatario, evento)
+    }
+    class IAutenticacao {
+        <<interface>>
+        +autenticar(credenciais) Perfil
+        +verificarPermissao(perfil, funcao) bool
+    }
+
+    ReservaService ..> IMaquinaService : injetada
+    ReservaService ..> IFilaPrioridade : injetada
+    ReservaService ..> INotificacao : injetada
+    ReservaService ..> IAutenticacao : injetada
+
+    class ICompraService {
+        <<interface>>
+        +solicitarCompra(insumoId, quantidade) PedidoCompra
+        +registrarDecisaoFinanceira(pedidoId, aprovado)
+        +confirmarEntrega(pedidoId, entregaId)
+    }
+    class CompraService {
+        +CompraService(IEstoqueService, INotificacao)
+    }
+    class IEstoqueService {
+        <<interface>>
+        +registrarConsumo(insumoId, quantidade, reservaId)
+        +consultarEstoque() Insumo[]
+        +registrarEntrada(insumoId, quantidade)
+    }
+    ICompraService <|.. CompraService
+    CompraService ..> IEstoqueService : injetada
+    CompraService ..> INotificacao : injetada
+
+    class MaquinaService
+    class FilaPrioridadeService
+    class NotificacaoOutboxService
+    class ControleAcessoService
+    class EstoqueService
+    IMaquinaService <|.. MaquinaService
+    IFilaPrioridade <|.. FilaPrioridadeService
+    INotificacao <|.. NotificacaoOutboxService
+    IAutenticacao <|.. ControleAcessoService
+    IEstoqueService <|.. EstoqueService

@@ -1,0 +1,24 @@
+flowchart TB
+    classDef decisao fill:#fff8dc,stroke:#8a6d00
+    classDef inicio fill:#000,stroke:#000,color:#fff
+    classDef acao fill:#eef4fb,stroke:#5d82a8,color:#0b2545
+
+    INI(("início")):::inicio
+
+    subgraph SOL["Solicitante"]
+        C1["Cancelar reserva (RF09)"]:::acao
+    end
+
+    subgraph SIS["Sistema FabLab"]
+        D1{"Reserva já negada<br/>ou cancelada?"}:::decisao
+        C2["Informar que não<br/>pode cancelar"]:::acao
+        C3["Liberar o horário e<br/>promover a próxima da fila"]:::acao
+        C4["Notificar os envolvidos<br/>por e-mail (RF25)"]:::acao
+    end
+
+    FIM1(("fim")):::inicio
+    FIM2(("fim")):::inicio
+
+    INI --> C1 --> D1
+    D1 -- sim --> C2 --> FIM1
+    D1 -- não --> C3 --> C4 --> FIM2

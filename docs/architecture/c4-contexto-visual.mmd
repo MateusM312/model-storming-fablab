@@ -1,0 +1,22 @@
+flowchart TB
+    classDef pessoa fill:#08427b,stroke:#052e56,color:#fff
+    classDef sistema fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef externo fill:#8c8c8c,stroke:#6b6b6b,color:#fff
+
+    sol["<b>Solicitante</b><br/><small>[Pessoa]</small><br/>Aluno ou projeto industrial<br/>que reserva máquinas"]:::pessoa
+    adm["<b>Administrador/Técnico</b><br/><small>[Pessoa]</small><br/>Aprova reservas e cuida<br/>das máquinas e do estoque"]:::pessoa
+
+    fab["<b>Sistema FabLab</b><br/><small>[Sistema de software]</small><br/>Reservas, fila de prioridade,<br/>manutenção, estoque e compras"]:::sistema
+
+    login["<b>Sistema de Login</b><br/><small>[Sistema externo]</small>"]:::externo
+    notif["<b>Serviço de Notificação</b><br/><small>[Sistema externo]</small>"]:::externo
+    fin["<b>Sistema Financeiro</b><br/><small>[Sistema externo]</small>"]:::externo
+    forn["<b>Portal do Fornecedor</b><br/><small>[Sistema externo]</small>"]:::externo
+
+    sol -- "Reserva máquinas,<br/>acompanha a fila" --> fab
+    adm -- "Aprova reservas,<br/>gerencia estoque" --> fab
+
+    fab -- "Autentica usuários" --> login
+    fab -- "Envia e-mails" --> notif
+    fab <-- "Solicitação e<br/>aprovação de compra" --> fin
+    fab <-- "Pedido e confirmação<br/>de entrega" --> forn

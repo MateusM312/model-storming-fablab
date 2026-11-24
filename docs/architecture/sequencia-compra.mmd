@@ -1,0 +1,37 @@
+sequenceDiagram
+    autonumber
+    actor Adm as Administrador/Técnico
+    participant API as API Backend
+    participant DB as Banco de Dados
+    participant Worker as Worker de Integrações
+    participant Fin as Sistema Financeiro
+    participant Forn as Portal do Fornecedor
+
+    rect rgb(240, 246, 255)
+    Note over Adm,DB: 1. Solicitação
+    Adm->>API: Solicitar compra de insumo (RF18)
+    API->>DB: Gravar pedido SOLICITADO + evento no outbox
+    API-->>Adm: Pedido registrado
+    end
+
+    rect rgb(245, 245, 245)
+    Note over Worker,Fin: 2. Aprovação financeira
+    Worker->>Fin: Enviar solicitação (via Broker de Mensagens)
+    Note over Worker,Fin: Se o Financeiro estiver fora do ar,<br/>o Worker tenta de novo mais tarde
+    Fin->>API: Decisão por webhook
+
+    alt Recusada (RF20)
+        API->>DB: Marcar RECUSADO + avisar o Administrador
+    else Aprovada (RF19)
+        API->>DB: Marcar APROVADO + evento no outbox
+    end
+    Note over Fin,API: Resposta repetida é ignorada (idempotência)
+    end
+
+    rect rgb(240, 250, 240)
+    Note over Worker,Forn: 3. Pedido e entrega (só se aprovado)
+    Worker->>Forn: Enviar pedido aprovado (RF21)
+    Forn->>API: Confirmar entrega por webhook (RF22)
+    API->>DB: Marcar ENTREGUE + somar ao estoque (RF23)
+    Note over Forn,API: Confirmação repetida não soma o estoque de novo
+    end

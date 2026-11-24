@@ -1,0 +1,32 @@
+flowchart LR
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef componente fill:#85bbf0,stroke:#5d82a8,color:#0b2545
+    classDef externo fill:#8c8c8c,stroke:#6b6b6b,color:#fff
+
+    web["<b>Aplicação Web</b><br/><small>[Contêiner]</small>"]:::container
+
+    subgraph api["API Backend: componentes (todos persistem no Banco de Dados)"]
+        aces["<b>Controle de Acesso</b><br/><small>ControleAcessoService</small>"]:::componente
+        res["<b>Reservas</b><br/><small>ReservaService</small>"]:::componente
+        maq["<b>Máquinas e Manutenção</b><br/><small>MaquinaService</small>"]:::componente
+        fila["<b>Fila de Prioridade</b><br/><small>FilaPrioridadeService</small>"]:::componente
+        comp["<b>Compras</b><br/><small>CompraService</small>"]:::componente
+        noti["<b>Notificações</b><br/><small>NotificacaoOutboxService<br/>grava eventos no outbox</small>"]:::componente
+        est["<b>Estoque de Insumos</b><br/><small>EstoqueService</small>"]:::componente
+    end
+
+    login["<b>Sistema de Login</b><br/><small>[Sistema externo]</small>"]:::externo
+
+    web -- "IAutenticacao" --> aces
+    web -- "IReservaService" --> res
+    web -- "IMaquinaService" --> maq
+    web -- "ICompraService" --> comp
+    web -- "IEstoqueService" --> est
+
+    res -- "IMaquinaService" --> maq
+    res -- "IFilaPrioridade" --> fila
+    res -- "INotificacao" --> noti
+    comp -- "IEstoqueService" --> est
+    comp -- "INotificacao" --> noti
+
+    aces -- "OIDC" --> login

@@ -1,0 +1,9 @@
+stateDiagram-v2
+    direction LR
+    [*] --> SOLICITADO : solicitar compra (RF18)
+    SOLICITADO --> APROVADO : Financeiro aprova (RF19)
+    SOLICITADO --> RECUSADO : Financeiro recusa (RF20)
+    APROVADO --> ENVIADO_FORNECEDOR : pedido encaminhado (RF21)
+    ENVIADO_FORNECEDOR --> ENTREGUE : Fornecedor confirma entrega (RF22)<br/>estoque atualizado (RF23)
+    RECUSADO --> [*]
+    ENTREGUE --> [*]
