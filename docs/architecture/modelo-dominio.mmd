@@ -1,28 +1,57 @@
 classDiagram
     direction LR
 
+    class Usuario {
+        +id : int
+        +nome : string
+        +email : string
+        +perfil : PerfilUsuario
+    }
+
     class Maquina {
-        id
-        tipo
-        estado : EstadoMaquina
+        +id : int
+        +nome : string
+        +tipo : string
+        +estado : EstadoMaquina
+        +motivoManutencao : string
     }
+
     class Reserva {
-        id
-        periodo
-        status : StatusReserva
-        posicaoFila
-        justificativa
+        +id : int
+        +dataInicio : dateTime
+        +dataFim : dateTime
+        +status : StatusReserva
+        +posicaoFila : int
+        +justificativa : string
     }
+
     class Insumo {
-        id
-        nome
-        unidade
-        quantidadeEmEstoque
+        +id : int
+        +nome : string
+        +unidade : string
+        +quantidadeEmEstoque : double
     }
+
+    class ConsumoInsumo {
+        +id : int
+        +quantidade : double
+        +dataRegistro : dateTime
+    }
+
     class PedidoCompra {
-        id
-        quantidade
-        status : StatusPedido
+        +id : int
+        +quantidade : double
+        +status : StatusPedido
+        +dataSolicitacao : dateTime
+        +justificativaRecusa : string
+    }
+
+    class PerfilUsuario {
+        <<enumeration>>
+        SOLICITANTE
+        ADMIN_TECNICO
+        FINANCEIRO
+        FORNECEDOR
     }
 
     class StatusReserva {
@@ -30,9 +59,12 @@ classDiagram
         PENDENTE
         EM_FILA
         APROVADA
+        EM_USO
+        CONCLUIDA
         NEGADA
         CANCELADA
     }
+
     class EstadoMaquina {
         <<enumeration>>
         DISPONIVEL
@@ -40,6 +72,7 @@ classDiagram
         EM_USO
         EM_MANUTENCAO
     }
+
     class StatusPedido {
         <<enumeration>>
         SOLICITADO
@@ -49,8 +82,14 @@ classDiagram
         ENTREGUE
     }
 
-    Reserva "*" --> "1" Maquina : reserva
+    Usuario "1" --> "*" Reserva : solicita
+    Usuario "1" --> "*" PedidoCompra : solicita
+    Reserva "*" --> "1" Maquina : aloca
+    Reserva "1" --> "*" ConsumoInsumo : gera
+    ConsumoInsumo "*" --> "1" Insumo : consome
     PedidoCompra "*" --> "1" Insumo : repõe
+
+    Usuario ..> PerfilUsuario
     Reserva ..> StatusReserva
     Maquina ..> EstadoMaquina
     PedidoCompra ..> StatusPedido
