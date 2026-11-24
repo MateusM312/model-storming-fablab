@@ -1,22 +1,27 @@
 stateDiagram-v2
     direction TB
 
-    [*] --> PENDENTE : solicitada,<br/>período livre
-    [*] --> EM_FILA : solicitada,<br/>com conflito
+    [*] --> PENDENTE : solicitada (RF02),<br/>período livre
+    [*] --> EM_FILA : solicitada (RF02),<br/>com conflito (RF03/RF04)
 
-    EM_FILA --> PENDENTE : chegou a vez
-    PENDENTE --> APROVADA : aprovada
-    PENDENTE --> NEGADA : negada
-    EM_FILA --> NEGADA : negada
+    EM_FILA --> EM_FILA : reordenada por Admin (RF14)
+    EM_FILA --> PENDENTE : vaga liberada / chegou a vez
+    
+    PENDENTE --> APROVADA : aprovada por Admin (RF06)
+    PENDENTE --> NEGADA : negada por Admin (RF07)
+    EM_FILA --> NEGADA : negada por Admin (RF07)
 
-    PENDENTE --> CANCELADA : cancelada
-    EM_FILA --> CANCELADA : cancelada
-    APROVADA --> CANCELADA : cancelada
+    PENDENTE --> CANCELADA : cancelada pelo solicitante (RF09)
+    EM_FILA --> CANCELADA : cancelada pelo solicitante (RF09)
+    APROVADA --> CANCELADA : cancelada antes do uso (RF09)
 
-    APROVADA --> [*]
+    APROVADA --> EM_USO : início do período reservado
+    EM_USO --> CONCLUIDA : fim do uso + consumo registrado (RF15)
+
+    CONCLUIDA --> [*]
     NEGADA --> [*]
     CANCELADA --> [*]
 
     note right of NEGADA
-        Sempre com justificativa (RF08)
+        Sempre com justificativa registrada (RF08)
     end note
