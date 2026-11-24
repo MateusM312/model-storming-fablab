@@ -1,28 +1,31 @@
-# Defesa de Arquitetura de Software — Pull Request
+C4Container
+    title Contêineres (C4 Nível 2) - Sistema FabLab
 
-## Autor do PR
-- **Nome do Estudante:** [Seu Nome Completo]
-- **Artefato(s) de Responsabilidade:** [ex: C4 Nível 3, Diagrama de Sequência e ADR 0001]
+    Person(solicitante, "Solicitante", "Reserva máquinas")
+    Person(admin, "Administrador/Técnico", "Aprova reservas, gerencia estoque")
 
-## O que este PR introduz na Documentação Viva?
-Descreva sucintamente as alterações e os novos modelos adicionados à pasta `/docs/`:
-- [ ] **Visão Funcional / Estrutural:** Diagrama de Casos de Uso ou Diagrama de Classes e Interfaces.
-- [ ] **Visão Comportamental:** Diagrama de Sequência, Atividades (com Raias/Fork-Join) ou Máquina de Estados.
-- [ ] **Visão Arquitetural Macro:** Modelo C4 (L1, L2 ou L3 em Structurizr DSL, D2 ou PlantUML).
-- [ ] **Governança:** Registros de Decisão Arquitetural (ADR).
+    System_Boundary(fablab, "Sistema FabLab") {
+        Container(web, "Aplicação Web", "SPA", "Telas do sistema")
+        Container(api, "API Backend", "API REST", "Regras de negócio")
+        ContainerDb(db, "Banco de Dados", "PostgreSQL", "Dados + outbox")
+        Container(worker, "Worker de Integrações", "Segundo plano", "Entrega eventos com retentativa")
+        ContainerQueue(broker, "Broker de Mensagens", "RabbitMQ", "Filas e DLQ")
+    }
 
-## Defesa das Decisões de Design (Justificativa Técnica)
-Explique a fundamentação técnica das decisões tomadas neste artefato:
-1. **Escolha de Abstrações e Desacoplamento:** Por que as interfaces, visibilidades e relacionamentos foram desenhados dessa forma?
-2. **Dinâmica e Resiliência:** Como os fluxos alternativos (`alt/else`), mensagens assíncronas ou guardas de estado tratam falhas no sistema?
-3. **Trade-offs:** Quais prós e contras foram considerados no momento da modelagem?
+    System_Ext(login, "Sistema de Login", "OIDC")
+    System_Ext(notificacao, "Serviço de Notificação", "E-mail")
+    System_Ext(financeiro, "Sistema Financeiro", "Aprova compras")
+    System_Ext(fornecedor, "Portal do Fornecedor", "Recebe pedidos")
 
-## Consistência Cross-Diagramas (Checklist de Autoverificação)
-Antes de solicitar a revisão de um colega, confirme o alinhamento entre os modelos:
-- [ ] Os nomes de métodos chamados no Diagrama de Sequência existem nas interfaces do Diagrama de Classes.
-- [ ] Os contêineres e componentes citados correspondem exatamente à nomenclatura do Modelo C4 L2/L3.
-- [ ] As transições de estado refletem os gatilhos disparados pelas atividades da aplicação.
-
-## Validação da Sintaxe Diagrams-as-Code / Models-as-Code
-- **Ferramenta de Compilação/Renderização Utilizada:** [ex: Structurizr CLI, D2 CLI, PlantUML, Mermaid Live]
-- **Status da Compilação:** [ ] Código limpo e sem erros de sintaxe ao renderizar.
+    Rel(solicitante, web, "Usa")
+    Rel(admin, web, "Usa")
+    Rel(web, api, "Chama", "JSON/HTTPS")
+    Rel(api, login, "Autentica", "OIDC")
+    Rel(api, db, "Grava dados e eventos na mesma transação", "SQL")
+    Rel(worker, db, "Lê eventos pendentes e marca como enviados", "SQL")
+    Rel(worker, broker, "Publica e consome eventos", "AMQP")
+    Rel(worker, notificacao, "Envia e-mails")
+    Rel(worker, financeiro, "Envia solicitações de compra")
+    Rel(worker, fornecedor, "Envia pedidos aprovados")
+    Rel(financeiro, api, "Responde aprovação ou recusa de compra", "Webhook/HTTPS")
+    Rel(fornecedor, api, "Confirma entrega do pedido", "Webhook/HTTPS")
