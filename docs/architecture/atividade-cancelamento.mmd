@@ -1,24 +1,29 @@
 flowchart TB
-    classDef decisao fill:#fff8dc,stroke:#8a6d00
-    classDef inicio fill:#000,stroke:#000,color:#fff
+    %% Legenda: azul = ação | amarelo = decisão | preto = início | anel = fim
     classDef acao fill:#eef4fb,stroke:#5d82a8,color:#0b2545
+    classDef decisao fill:#fff8dc,stroke:#8a6d00,color:#3d3000
+    classDef inicio fill:#000,stroke:#000,color:#fff
+    classDef fim fill:#fff,stroke:#000,stroke-width:3px,color:#000
 
     INI(("início")):::inicio
 
-    subgraph SOL["Solicitante"]
+    subgraph SOL["👤 Solicitante"]
         C1["Cancelar reserva (RF09)"]:::acao
     end
 
-    subgraph SIS["Sistema FabLab"]
-        D1{"Reserva já negada<br/>ou cancelada?"}:::decisao
-        C2["Informar que não<br/>pode cancelar"]:::acao
-        C3["Liberar o horário e<br/>promover a próxima da fila"]:::acao
-        C4["Notificar os envolvidos<br/>por e-mail (RF25)"]:::acao
+    subgraph SIS["⚙️ Sistema FabLab"]
+        D1{"Status atual<br/>da reserva?"}:::decisao
+        C2["Informar que a reserva<br/>não pode ser cancelada"]:::acao
+        C3["Retirar da fila e<br/>atualizar as posições (RF05)"]:::acao
+        C4["Liberar o horário e<br/>promover a próxima da fila"]:::acao
+        C5["Marcar CANCELADA e<br/>notificar os envolvidos (RF25)"]:::acao
     end
 
-    FIM1(("fim")):::inicio
-    FIM2(("fim")):::inicio
+    FIM1((("fim"))):::fim
+    FIM2((("fim"))):::fim
 
     INI --> C1 --> D1
-    D1 -- sim --> C2 --> FIM1
-    D1 -- não --> C3 --> C4 --> FIM2
+    D1 -- "NEGADA ou<br/>CANCELADA" --> C2 --> FIM1
+    D1 -- "EM_FILA" --> C3 --> C5
+    D1 -- "PENDENTE ou<br/>APROVADA" --> C4 --> C5
+    C5 --> FIM2
